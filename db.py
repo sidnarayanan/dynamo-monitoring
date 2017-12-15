@@ -69,5 +69,5 @@ def read_run(run, archive_dir='/mnt/hadoop/dynamo/dynamo/detox_snapshots'):
 	sql = 'SELECT `site_id`, `dataset_id`, `size`, `decision_id` FROM replicas;'
 	cursor.execute(sql)
 	return cursor.fetchall()
-    except OSError:
+    except IOError:
 	return []

@@ -1,5 +1,6 @@
 from time import time 
 now = time()
+import re
 
 class Replica(object):
     def __init__(self, name, size):
@@ -30,16 +31,21 @@ class Dataset(object):
         self.size = size 
         self.replicas = []
         self.accesses = []
+        self.created = 1 # need to be filled
     def add_replica(self, repl_size, timestamp, decision):
         deletion = (decision == 1)
         if not self.replicas or self.replicas[-1].deleted:
             self.replicas.append( Replica(self.name, repl_size) )
         self.replicas[-1].extend(timestamp, deletion)
-    def volume(self, start, end):
+    def volume(self, start, end, pattern):
+        if not pattern.match(self.name.split('/')[-1])
+            return 0
         return reduce(lambda x, y: x + y.volume(start, end), self.replicas, 0) / (end - start)
     def add_access(self, ts, n):
         self.accesses.append((ts, n))
-    def usage(self, start, end):
+    def usage(self, start, end, pattern):
+        if not pattern.match(self.name.split('/')[-1])
+            return 0
         return sum([x[1] for x in self.accesses if x[0] > start and x[0] < end])
 
 
@@ -63,5 +69,7 @@ class Site(object):
             self.datasets[dataset_id].add_access(ts, n)
         except KeyError:
             return
-    def volumes(self, start, end):
-        return dict([(k,v.volume(start, end)) for k,v in self.datasets.iteritems()])
+    def volumes(self, start, end, pattern):
+        return dict([(k,v.volume(start, end, pattern)) for k,v in self.datasets.iteritems()])
+    def usage(self, start, end, pattern):
+        return dict([(k,v.usage(start, end, pattern)) for k,v in self.datasets.iteritems()])
