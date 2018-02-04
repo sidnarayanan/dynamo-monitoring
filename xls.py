@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from string import ascii_uppercase
 import time
 
-def _get_row(histName):
+def _get_row(name):
     rows = {
         'XAODX' : [3,4,5],
         'XAOD' : [8,9,10],
@@ -12,13 +12,9 @@ def _get_row(histName):
         'MINIAODX' : [18,19,20],
         'RECO' : [23,24,25]
     }
-    ll = histName.split('_')
-    if 'T12' in histName:
-        tier = ll[2]
-        period = ll[3]
-    else:
-        tier = ll[3]
-        period = ll[4]
+    ll = name.split('_')
+    tier = ll[0]
+    period = ll[1]
     if '3m' in period:
         iM = 0
     elif '6m' in period:
@@ -50,9 +46,7 @@ def write_xls(label,outdir,templdir,plots):
             print 'could not find',name
             continue
         for iB, val in enumerate(content):
-            column = ascii_uppercase[iB]
-            val = hist.GetBinContent(iB)
-            # print iB,column,val,name,row
+            column = ascii_uppercase[iB+1]
             cell = cells['%s%i'%(column,row)]
             cell.text = str(val)
             cell.set('updated','yes')
@@ -61,7 +55,7 @@ def write_xls(label,outdir,templdir,plots):
 
     os.system('cd /tmp/%s/xlstempl/; find . -type f | xargs zip new.xlsx; cd -'%user)
 
-    mvcmd = 'mv /tmp/%s/xlstempl/new.xlsx %s/xls/%s.xlsx'%(user,outdir,label)
+    mvcmd = 'mv /tmp/%s/xlstempl/new.xlsx %s/%s.xlsx'%(user,outdir,label)
     print mvcmd
     os.system(mvcmd)
 

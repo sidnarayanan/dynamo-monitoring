@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 
 import sys
 sys.path = [x for x in sys.path if '/.local/' not in x] # for testing purposes to avoid conflicting libraries
@@ -12,6 +12,8 @@ import cPickle as pickle
 from argparse import ArgumentParser
 import re
 import numpy as np
+
+WORKDIR = '/home/snarayan/dynamo-popularity/' # TODO - don't hardcode
 
 parser = ArgumentParser()
 parser.add_argument('--skip_history', action='store_true')
@@ -73,12 +75,12 @@ for r in results:
     id_to_sname[r[0]] = r[1]
 
 if args.skip_history and args.skip_accesses:
-    datasets = pickle.load(open('merged.pkl','rb'))
+    datasets = pickle.load(open(WORKDIR + 'merged.pkl','rb'))
 else:
     datasets = {}
     if args.skip_history:
         myprint('loading datasets cache')
-        datasets = pickle.load(open('datasets.pkl', 'rb'))
+        datasets = pickle.load(open(WORKDIR + 'datasets.pkl', 'rb'))
         myprint('-> fetched %i datasets'%(len(datasets)))
     else:
         myprint('figure out which dynamo runs are relevant and read them in')
@@ -100,13 +102,13 @@ else:
     #        if n_valid_runs > 10:
     #            break
 
-        with open('datasets.pkl', 'wb') as pklfile:
+        with open(WORKDIR + 'datasets.pkl', 'wb') as pklfile:
             pickle.dump(datasets, pklfile, -1)
 
 
     if args.skip_accesses:
         myprint('loading accesses cache')
-        accesses = pickle.load(open('accesses.pkl', 'rb')) 
+        accesses = pickle.load(open(WORKDIR + 'accesses.pkl', 'rb')) 
         myprint('-> fetched %i accesses'%(len(accesses)))
     else:
         accesses = {}
@@ -120,7 +122,7 @@ else:
             if r[1] not in accesses[r[0]]:
                 accesses[r[0]][r[1]] = []
             accesses[r[0]][r[1]].append( (ts, r[3]) )
-        with open('accesses.pkl', 'wb') as pklfile:
+        with open(WORKDIR + 'accesses.pkl', 'wb') as pklfile:
             pickle.dump(accesses, pklfile, -1)
 
 
@@ -136,7 +138,7 @@ else:
         except KeyError:
             pass
 
-    with open('merged.pkl', 'wb') as pklfile:
+    with open(WORKDIR + 'merged.pkl', 'wb') as pklfile:
         pickle.dump(datasets, pklfile, -1)
 
 
@@ -144,9 +146,9 @@ else:
 datatiers = {
              'XAODX'    : '.*AOD.*', 
              'XAOD'     : '.*AOD$', 
+             'XAODSIM'  : '.*AODSIM', 
              'RECO'     : '^RECO$', 
              'MINIAODX' : '^MINIAOD.*',
-             'AODX'     : '^AOD.*',
              }
 datatiers = dict([(k,re.compile(v)) for k,v in datatiers.iteritems()])
 
@@ -177,7 +179,7 @@ all_times = {'now' : [
             }
 
 
-bins = np.arange(-1,15)
+bins = np.arange(-1,17)
 def bin(usage, age, threshold):
     if usage == 0:
         if age > threshold:
@@ -185,12 +187,12 @@ def bin(usage, age, threshold):
         else:
             return -1
     else:
-        return min(14, int(usage)) 
+        return min(15, int(usage)) 
 
 myprint('creating plots')
 basedir = '/home/snarayan/public_html/dynpop/latest/'
 
-ticklabels = ['0 old', '0 new'] + [str(x) for x in bins[2:].tolist()]
+ticklabels = ['0 old', '0 new'] + [str(x) for x in bins[2:-2].tolist()] + ['> 14']
 
 for end_label, times in all_times.iteritems():
     outputbase = basedir + '/' + end_label
@@ -201,7 +203,7 @@ for end_label, times in all_times.iteritems():
             for s, mask in sitemasks.iteritems():
                 ftxt = open(outputbase + '/txt/%s_%s_%s.txt'%(tlabel, d, s),'w') 
                 ftxt.write('%5s %15s %15s %15s %s\n'%('bin','volume','naccess','nfiles','dataset'))
-                content = [0]*len(bins)
+                content = [0]*(len(bins)-1)
                 myprint('-> %s %s %s'%(tlabel, d, s))
                 for _,ds in datasets.iteritems():
                     v = ds.volume(start, end, drx, mask)
@@ -213,10 +215,9 @@ for end_label, times in all_times.iteritems():
                 fig, ax = plt.subplots()
                 ax.set_xlabel('Number of accesses')
                 ax.set_ylabel('Disk volume [PB]')
-                ax.hist(bins, bins=bins, weights=content)
-                ax.set_xticks(bins+0.45)
+                ax.hist(bins[:-1], bins=bins-0.5, weights=content)
+                ax.set_xticks(bins[:-1])
                 ax.set_xticklabels(ticklabels, rotation=45)
-                print '--> integral = %.3f'%(np.sum(content))
                 output = outputbase + '/%s_%s_%s'%(tlabel, d, s)
                 plt.savefig(output+'.png',bbox_inches='tight',dpi=300)
                 plots[(tlabel, d, s)] = content
@@ -233,21 +234,22 @@ for end_label, times in all_times.iteritems():
             offset = 0
             bars = {}
             for (tlabel,_,__),color in zip(times, ['r','g','b']):
-                bars[tlabel] = ax.bar(bins+offset, plots[(tlabel, d, s)], width, color=color)
+                bars[tlabel] = ax.bar((bins[:-1]-0.5)+offset, plots[(tlabel, d, s)], width, color=color)
                 offset += width
-            ax.set_xticks(bins+0.3)
+            ax.set_xticks(bins[:-1]-0.2)
             ax.set_xticklabels(ticklabels, rotation=45)
             ax.legend([bars[x[0]] for x in times], [x[0] for x in times])
             output = outputbase + '/stacked_%s_%s'%(d, s)
             plt.savefig(output+'.png',bbox_inches='tight',dpi=300)
         xls.write_xls(label=s,
                       outdir=outputbase,
-                      templdir='/home/snarayan/dynamo-popularity/templ/', # TODO - don't hardcode
-                      plots={'%s_%s'%(d,t) for d in in datatiers
-                                           for (tlabel,_,__) in times})
+                      templdir=WORKDIR + '/templ/',
+                      plots={'%s_%s'%(d,tlabel):plots[(tlabel, d, s)] 
+                                for d in datatiers
+                                for (tlabel,_,__) in times})
 
 # cache just a few things 
-cachedir = basedir.replace('latest',strftime('%Y%m%d',time.gmtime()))
+cachedir = basedir.replace('latest',time.strftime('%Y%m%d',time.gmtime()))
 for tlabel in all_times:
     system('mkdir -p %s/%s'%(cachedir,tlabel))
     system('cp %s/%s/*xlsx %s/%s'%(basedir,tlabel,cachedir,tlabel))
