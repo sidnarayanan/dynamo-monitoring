@@ -217,7 +217,7 @@ for end_label, times in all_times.iteritems():
                 ax.set_ylabel('Disk volume [PB]')
                 ax.hist(bins[:-1], bins=bins-0.5, weights=content)
                 ax.set_xticks(bins[:-1])
-                ax.set_xticklabels(ticklabels, rotation=45)
+                ax.set_xticklabels(ticklabels, rotation=90)
                 output = outputbase + '/%s_%s_%s'%(tlabel, d, s)
                 plt.savefig(output+'.png',bbox_inches='tight',dpi=300)
                 plots[(tlabel, d, s)] = content
@@ -237,7 +237,7 @@ for end_label, times in all_times.iteritems():
                 bars[tlabel] = ax.bar((bins[:-1]-0.5)+offset, plots[(tlabel, d, s)], width, color=color)
                 offset += width
             ax.set_xticks(bins[:-1]-0.2)
-            ax.set_xticklabels(ticklabels, rotation=45)
+            ax.set_xticklabels(ticklabels, rotation=90)
             ax.legend([bars[x[0]] for x in times], [x[0] for x in times])
             output = outputbase + '/stacked_%s_%s'%(d, s)
             plt.savefig(output+'.png',bbox_inches='tight',dpi=300)
