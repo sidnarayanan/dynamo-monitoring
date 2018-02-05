@@ -187,12 +187,12 @@ def bin(usage, age, threshold):
         else:
             return -1
     else:
-        return min(15, int(usage)) 
+        return max(1, min(15, int(usage))) 
 
 myprint('creating plots')
 basedir = '/home/snarayan/public_html/dynpop/latest/'
 
-ticklabels = ['0 old', '0 new'] + [str(x) for x in bins[2:-2].tolist()] + ['> 14']
+ticklabels = ['0 old', '0 new', '> 0'] + [str(x) for x in bins[3:-2].tolist()] + ['> 14']
 
 for end_label, times in all_times.iteritems():
     outputbase = basedir + '/' + end_label
