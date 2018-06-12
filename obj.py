@@ -35,10 +35,8 @@ class AccessHistory(object):
     def add_access(self, ts, n):
         self.accesses.append((ts, n))
     def usage(self, start=-1, end=now):
-        return sum(
-                [n for ts,n in self.accesses
-                   if ts > start and ts < end]
-            )
+        return sum([n for ts,n in self.accesses
+                      if ts > start and ts < end])
 
 
 class Dataset(object):

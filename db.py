@@ -39,7 +39,7 @@ def query_datasets(cursor=None):
 def query_datasets_ext(cursor=None):
     if not cursor:
         cursor = get_cursor('dynamo')
-    sql = ' SELECT d.`id`, d.`name`, d.`last_update`, d.`num_files` FROM `datasets` AS d;'
+    sql = ' SELECT d.`id`, d.`name`, d.`last_update`, SUM(b.`num_files`) FROM `datasets` AS d INNER JOIN `blocks` AS b ON d.`id` = b.`dataset_id` GROUP BY d.`id`;'
     cursor.execute(sql)
     results = cursor.fetchall()
     print '-> query fetched %i results'%(len(results))

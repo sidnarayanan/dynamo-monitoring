@@ -60,7 +60,7 @@ for r in results:
         ct = time.mktime(r[2].timetuple())
         gds = global_datasets[did]
         gds.created = ct
-        gds.nfiles = r[3]
+        gds.nfiles = float(r[3])
     except KeyError:
         pass # this is a superset
 
