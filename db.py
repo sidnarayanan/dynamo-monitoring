@@ -62,7 +62,8 @@ def query_accesses(cursor=None):
 def valid_runs(cursor=None):
     if not cursor:
         cursor = get_cursor('dynamohistory')
-    sql = 'SELECT id, time_start FROM `runs` WHERE `partition_id`=10 AND `operation`=\'deletion\' ORDER BY id ASC;'
+#    sql = 'SELECT id, time_start FROM `runs` WHERE `partition_id`=10 AND `operation`=\'deletion\' ORDER BY id ASC;'
+    sql = 'SELECT id, time_start FROM `deletion_cycles` WHERE `partition_id`=10 AND `operation`=\'deletion\' AND UNIX_TIMESTAMP(time_start) IS NOT NULL ORDER BY id ASC'
     cursor.execute(sql)
     results = cursor.fetchall()
     keys = ['id', 'time_start']
@@ -85,7 +86,10 @@ def read_run(run, archive_dir='/mnt/hadoop/dynamo/dynamo/detox_snapshots'):
             except OSError:
                 pass
         shutil.copyfile(db_file, '/tmp/monitor_%.9i.db.xz'%run)
-        os.system('unxz /tmp/monitor_%.9i.db.xz'%run)
+        ret = os.system('unxz /tmp/monitor_%.9i.db.xz'%run)
+
+        if ret:
+            raise IOError()
 
         db = sqlite3.connect('/tmp/monitor_%.9i.db'%run)
         cursor = db.cursor()
